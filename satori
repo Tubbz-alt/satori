@@ -176,7 +176,7 @@ def bwupdate():
 def bwupload():
     copyfile(blacklist, gitFolder+"/blacklist.txt")
     
-    call(["git", "-C", gitFolder, "commit", "-am", "Blacklist-Update"])
+    call(["git", "-C", gitFolder, "commit", "-am", "Blacklist/Whitelist-Update"])
     call(["git", "-C", gitFolder, "push", "origin", "master"])
 
 def exitGracefully(signal, frame):
