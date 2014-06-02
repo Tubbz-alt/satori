@@ -15,7 +15,7 @@ packagesSimilarities=$3
 blacklist=$4
 itemsCount=$(cat $packagesSimilarities | wc -l)
 
-echo ">> Checking version numbers"
+echo ">> Checking version numbers."
 
 #Main loop
 iteration=1

@@ -14,10 +14,15 @@ import signal
 from subprocess import call
 from sys import exit, argv
 from os import path, geteuid, makedirs
+from shutil import copyfile
 
 
 #Define functions
 def printBanner():
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
     print("""
  _____       _             _ 
 /  ___|     | |           (_)
@@ -101,6 +106,8 @@ def updateContent():
     f.write(packagesSimilaritiesString)
     f.close()
     
+    bwupdate()
+    
     print(">> Finished!")
     
 def checkFiles():
@@ -155,7 +162,23 @@ def printBlacklist():
     
     with open(blacklist, 'r') as f:
         print(f.read())
+
+def bwupdate():
+    if not path.exists(gitFolder):
+        print(">> Cloning Satori GIT.")
+        call(["git", "clone", gitUrl, gitFolder])
+    else:
+        print(">> Pulling Satori GIT changes.")
+        call(["git", "-C", gitFolder, "pull"])
+        
+    copyfile(gitFolder+"/blacklist.txt", blacklist)
     
+def bwupload():
+    copyfile(blacklist, gitFolder+"/blacklist.txt")
+    
+    call(["git", "-C", gitFolder, "commit", "-am", "Blacklist-Update"])
+    call(["git", "-C", gitFolder, "push", "origin", "master"])
+
 def exitGracefully(signal, frame):
     exit(">> Thank you for exiting gracefully.")
 
@@ -165,6 +188,8 @@ packagesOfficialFile = path.expanduser("~") + "/.satori/packages-official.txt"
 packagesAurFile = path.expanduser("~") + "/.satori/packages-aur.txt"
 packagesSimilaritiesFile = path.expanduser("~") + "/.satori/packages-similarities.txt"
 blacklist = path.expanduser("~") + "/.satori/blacklist.txt"
+gitUrl = "git@github.com:dcell/satori.git"
+gitFolder = path.expanduser("~") + "/.satori/satori"
 
 
 #Catch sigint
@@ -187,68 +212,45 @@ if geteuid() == 0:
         
 #Run the init option
 if (len(argv) > 1) and str(argv[1]) == "init": 
-    #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     print(">> Checking if packages lists exist.")
     checkFiles()
-        
     updateContent()
 #Run the update option
 elif (len(argv) > 1) and str(argv[1]) == "update": 
-    #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     checkFiles()
-    
     updateContent()
 #Run the check option
 elif (len(argv) > 1) and str(argv[1]) == "check": 
-    #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     checkFiles()
-    
     call(["bash", "/usr/share/satori/versionchecker", packagesOfficialFile, packagesAurFile, packagesSimilaritiesFile, blacklist])
 #Run the blacklist option
 elif (len(argv) > 1) and str(argv[1]) == "blacklist": 
     #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     checkFiles()
-    
     blacklistAdd()
 #Run the whitelist option
 elif (len(argv) > 1) and str(argv[1]) == "whitelist": 
     #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     checkFiles()
-    
     whitelistAdd()
 #Run the printblacklist option
 elif (len(argv) > 1) and str(argv[1]) == "printblacklist": 
-    #Make sure clear is available and clear the screen
-    if path.isfile("/usr/bin/clear"):
-        call(["clear"])
-        
     printBanner()
-    
     checkFiles()
-    
     printBlacklist()
+#Run the bwupdate option
+elif (len(argv) > 1) and str(argv[1]) == "bwupdate": 
+    printBanner()
+    checkFiles()
+    bwupdate()
+#Run the bwupdate option
+elif (len(argv) > 1) and str(argv[1]) == "bwupload": 
+    printBanner()
+    checkFiles()
+    bwupload()
+    
