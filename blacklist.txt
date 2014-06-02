@@ -1,1 +1,2 @@
 fetter
+gtk-theme-ceti
