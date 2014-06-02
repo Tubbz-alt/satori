@@ -1,0 +1,36 @@
+#!/usr/bin/bash
+
+################################
+#
+# Coded entirely by Joshua Strot
+#
+# joshua@manjaro.org
+#
+################################
+
+#Define Variables
+packagesOfficial=$1
+packagesAur=$2
+packagesSimilarities=$3
+blacklist=$4
+itemsCount=$(cat $packagesSimilarities | wc -l)
+
+echo ">> Checking version numbers"
+
+#Main loop
+iteration=1
+while [ $iteration -lt $((itemsCount+1)) ]; do
+    line=$(sed -n ${iteration}p $packagesSimilarities) #Grab package line
+    officialVersion=$(pacman -Si $line | grep -m 1 "Version" | sed 's/ //g;s/.*:/:/g;s/://g') #Grab official version
+    line="$line " #Add space to line to define it has nothing after for AUR version
+    aurVersion=$(grep -m 1 $line $packagesAur | sed 's/[^ ]* //') #Grab AUR version
+    
+    if [ $officialVersion != $aurVersion ]; then #Check if there's a difference in version
+        blacklistCheck=$(cat $blacklist | grep -Fx $line) #will set to $line if a blacklist item is present
+        if [ -z $blacklistCheck ]; then #Check if variable is set
+            echo ">> Difference! $line $officialVersion -> $aurVersion" #Ruh roh
+        fi
+    fi
+    
+    iteration=$((iteration+1)) #Iterate
+done

@@ -1,0 +1,254 @@
+#!/usr/bin/python
+
+################################
+#
+# Coded entirely by Joshua Strot
+#
+# joshua@manjaro.org
+#
+################################
+
+#Import libraries
+import signal
+
+from subprocess import call
+from sys import exit, argv
+from os import path, geteuid, makedirs
+
+
+#Define functions
+def printBanner():
+    print("""
+ _____       _             _ 
+/  ___|     | |           (_)
+\ `--.  __ _| |_ ___  _ __ _ 
+ `--. \/ _` | __/ _ \| '__| |
+/\__/ / (_| | || (_) | |  | |
+\____/ \__,_|\__\___/|_|  |_|
+           
+Joshua Strot <joshua@manjaro.org>
+    """)
+
+def printHelp():
+    print("""usage: satori [OPTIONS]
+        
+  init                   Initialize a list of AUR packages in the repository
+  update                 Update the list 
+  check                  Check for any updates from the AUR
+  blacklist              Blacklist a package so it doesn't show in checks
+  whitelist              Whitelist a package to be checked again
+  printblacklist         Print the contents of the blacklist
+  bwupdate               Update the black and white lists from GIT
+  bwupload               Upload your changes to the black and white lists using GIT
+                         (Must have SSH git set up and access to the Satori GIT page)
+    """)
+
+def syncMirrors():
+    print(">> Starting synchronizing mirrors.\n")
+    syncMirrorsCode = call(["sudo", "pacman", "-Syy"])
+
+    if syncMirrorsCode != 0:
+        exit(">> It looks like an error occured while synchronizing the mirrors...")
+
+def updateContent():
+    #Sync the mirrors
+    syncMirrors()
+    
+    #Grab list of all repository packages
+    print(">> Downloading the list of offical packages.")
+    packagesOfficialWrite = open(packagesOfficialFile, "w")
+    packagesOfficialCode = call(["pacman", "-Ssq"], stdout=packagesOfficialWrite)
+    packagesOfficialWrite.close()
+    
+    if packagesOfficialCode != 0:
+        exit(">> It looks like an error occured while downloading the packages offical list.")
+    
+    #Grab list of AUR packages
+    print(">> Downloading the list of AUR packages (Note: This may take some time!).")
+    packagesAurCode = call(["bash", "/usr/share/satori/scraper", packagesAurFile])
+    
+    if packagesAurCode != 0:
+        exit(">> It looks like an error occured while downloading the AUR list.")
+    
+    #Read conents of official packages into list
+    with open(packagesOfficialFile) as f:
+        packagesOfficial = f.readlines()
+        
+    #Read conents of AUR packages into list
+    with open(packagesAurFile) as f:
+        packagesAur = f.readlines()
+        
+    #Get only package names from AUR list
+    for i in range(len(packagesAur)):
+        packagesAur[i] = packagesAur[i].split()[0]
+    
+    #Get only package names from official list
+    for i in range(len(packagesOfficial)):
+        packagesOfficial[i] = packagesOfficial[i].split()[0]
+        
+    #Find matches
+    packagesSimilarities = set(packagesOfficial).intersection(packagesAur)
+    packagesSimilarities = list(packagesSimilarities)
+    packagesSimilarities.sort()
+    
+    #Add new line to each item in packagesSimilarities
+    for i in range(len(packagesSimilarities)):
+        packagesSimilarities[i] = str(packagesSimilarities[i]) + "\n"
+    
+    #Write matches to similarities
+    f = open(packagesSimilaritiesFile, "w")
+    packagesSimilaritiesString= "".join(map(lambda x: str(x), packagesSimilarities))
+    f.write(packagesSimilaritiesString)
+    f.close()
+    
+    print(">> Finished!")
+    
+def checkFiles():
+    #Create .satori directory and contents
+    if not path.exists(configFolder):
+        print(">> Creating .satori directory.")
+        makedirs(configFolder)
+    
+    if not path.exists(packagesOfficialFile):
+        print(">> Creating packages official lists.")
+        open(packagesOfficialFile, 'w').close()
+    if not path.exists(packagesAurFile):
+        print(">> Creating packages Aur lists.")
+        open(packagesAurFile, 'w').close()
+    if not path.exists(packagesSimilaritiesFile):
+        print(">> Creating packages similarities lists.")
+        open(packagesSimilaritiesFile, 'w').close()
+    if not path.exists(blacklist):
+        print(">> Creating blacklists.")
+        open(blacklist, 'w').close()
+        
+def blacklistAdd():
+    #Add a package to the blacklist
+    package = input(">> What is the package you'd like to blacklist? > ")
+    
+    with open(blacklist) as f: #Read conents of blacklist into list
+        blacklistPackages = [line.rstrip('\n') for line in f]
+        
+    blacklistPackages.append(package.strip("\n")) #Append package to list
+    blacklistPackages.sort() #Sort blacklist
+    
+    with open(blacklist, 'w') as f:
+        for p in blacklistPackages:
+            f.write(p + "\n")
+        
+def whitelistAdd():
+    #Add a package to the blacklist
+    package = input(">> What is the package you'd like to whitelist? > ")
+    
+    with open(blacklist) as f: #Read conents of blacklist into list
+        blacklistPackages = [line.rstrip('\n') for line in f]
+    
+    if package in blacklistPackages:
+        blacklistPackages.remove(package.strip("\n")) #Remove package from list
+    
+    with open(blacklist, 'w') as f:
+        for p in blacklistPackages:
+            f.write(p + "\n")
+    
+def printBlacklist():
+    print(">> Blacklist items:")
+    
+    with open(blacklist, 'r') as f:
+        print(f.read())
+    
+def exitGracefully(signal, frame):
+    exit(">> Thank you for exiting gracefully.")
+
+#Set variables
+configFolder = path.expanduser("~") + "/.satori"
+packagesOfficialFile = path.expanduser("~") + "/.satori/packages-official.txt"
+packagesAurFile = path.expanduser("~") + "/.satori/packages-aur.txt"
+packagesSimilaritiesFile = path.expanduser("~") + "/.satori/packages-similarities.txt"
+blacklist = path.expanduser("~") + "/.satori/blacklist.txt"
+
+
+#Catch sigint
+signal.signal(signal.SIGINT, exitGracefully)
+
+
+#Check to see if help should be printed
+if len(argv) <= 1:
+    printBanner()
+    printHelp()
+    exit(0)
+elif (len(argv) > 1) and str(argv[1]) == "help":
+    printBanner()
+    printHelp()
+    exit(0)
+
+#If root... kick out
+if geteuid() == 0:
+    exit(">> Satori can't be ran as root.")
+        
+#Run the init option
+if (len(argv) > 1) and str(argv[1]) == "init": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    print(">> Checking if packages lists exist.")
+    checkFiles()
+        
+    updateContent()
+#Run the update option
+elif (len(argv) > 1) and str(argv[1]) == "update": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    checkFiles()
+    
+    updateContent()
+#Run the check option
+elif (len(argv) > 1) and str(argv[1]) == "check": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    checkFiles()
+    
+    call(["bash", "/usr/share/satori/versionchecker", packagesOfficialFile, packagesAurFile, packagesSimilaritiesFile, blacklist])
+#Run the blacklist option
+elif (len(argv) > 1) and str(argv[1]) == "blacklist": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    checkFiles()
+    
+    blacklistAdd()
+#Run the whitelist option
+elif (len(argv) > 1) and str(argv[1]) == "whitelist": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    checkFiles()
+    
+    whitelistAdd()
+#Run the printblacklist option
+elif (len(argv) > 1) and str(argv[1]) == "printblacklist": 
+    #Make sure clear is available and clear the screen
+    if path.isfile("/usr/bin/clear"):
+        call(["clear"])
+        
+    printBanner()
+    
+    checkFiles()
+    
+    printBlacklist()

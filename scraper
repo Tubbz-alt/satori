@@ -1,0 +1,41 @@
+#!/usr/bin/bash 
+
+################################
+#
+# Coded entirely by Joshua Strot
+#
+# joshua@manjaro.org
+#
+################################
+
+echo ">> Initializing scraper"
+
+#Define Vars
+start="1"
+page="0"
+perpage="250"
+webpath='https://aur.archlinux.org/packages/?O=%start&C=0&SeB=nd&SB=n&SO=a&PP=%perpage&do_Search=Go'
+url=$(echo "$webpath" | sed -e "s/%start/$start/g" -e "s/%perpage/$perpage/g"); #Insert HTTP-GET variables
+pagetotal=$(curl -s "$url" 2>/dev/null | grep "packages found. Page 1 of" | awk NR==1 | awk -F "Page 1 of " '{print $2}' | awk -F "." '{print $1}'); #Find the page total
+
+echo ">> Started scraper"
+    
+cat /dev/null > $1 #Clear the input file
+
+while [ "$page" -lt "$pagetotal" ]; do #Start initial loop
+    echo ">> Downloading page $page"
+    
+    url=$(echo "$webpath" | sed -e "s/%start/$start/g" -e "s/%perpage/$perpage/g");
+    #Start long curl and sed regex command to strip the HTML from the important data
+    curl -s "$url" 2>/dev/null | \
+        grep -A 1 '<a href="/packages/[0-9A-Za-z]' | \
+        sed 'N;N;s/\n//g' | \
+        sed 's/<\/td>/ /g;s/<[^>]\+>//g;s/\t//g;s/--//g;' | \
+        sed 'N;$!{P;D}; s/.\n/ /' \
+        >> $1
+    
+    page=$((page+1)); #Iterate to next page
+    start=$((page*perpage)); #Evaluate beginning of next page
+done;
+
+#Woolah
