@@ -23,7 +23,7 @@ while [ $iteration -lt $((itemsCount+1)) ]; do
     line=$(sed -n ${iteration}p $packagesSimilarities) #Grab package line
     officialVersion=$(pacman -Si $line | grep -m 1 "Version" | sed 's/ //g;s/.*:/:/g;s/://g') #Grab official version
     line="$line " #Add space to line to define it has nothing after for AUR version
-    aurVersion=$(grep -m 1 $line $packagesAur | sed 's/[^ ]* //') #Grab AUR version
+    aurVersion=$(grep -m 1 "$line" $packagesAur | sed 's/[^ ]* //') #Grab AUR version
     
     if [ $officialVersion != $aurVersion ]; then #Check if there's a difference in version
         blacklistCheck=$(cat $blacklist | grep -Fx $line) #will set to $line if a blacklist item is present
