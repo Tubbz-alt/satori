@@ -1,2 +1,14 @@
+ambiance-radiance-xfce-lxde
+catalyst-utils
+cinnamon-theme-minty
+docbook-sgml
+econnman
+ecrire-git
+ephoto-git
+equate-git
 fetter
 gtk-theme-ceti
+gtk-theme-zukiwi
+lib32-catalyst-utils
+libreoffice-installer
+mdm
