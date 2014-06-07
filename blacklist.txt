@@ -1,6 +1,11 @@
 ambiance-radiance-xfce-lxde
 catalyst-utils
+ccsm
 cinnamon-theme-minty
+compiz-fusion-plugins-extra
+compiz-fusion-plugins-main
+compiz-mate
+compizconfig-python
 docbook-sgml
 econnman
 ecrire-git
@@ -12,3 +17,4 @@ gtk-theme-zukiwi
 lib32-catalyst-utils
 libreoffice-installer
 mdm
+xtitle-git
