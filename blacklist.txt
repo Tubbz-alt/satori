@@ -7,7 +7,6 @@ compiz-fusion-plugins-main
 compiz-mate
 compizconfig-python
 docbook-sgml
-econnman
 ecrire-git
 ephoto-git
 equate-git
