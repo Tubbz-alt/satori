@@ -1,4 +1,5 @@
-satori
-======
+This repo has been archived. Our code is now hosted at
 
-Package version checker for AUR and official repositories
+https://gitlab.manjaro.org/
+
+See you there!
